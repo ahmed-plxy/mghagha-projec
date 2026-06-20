@@ -1,0 +1,58 @@
+<%- include('../partials/header', { title: store.store_name }) %>
+<div class="container">
+  <% if (store.cover_image) { %>
+    <div class="store-header-banner">
+      <img src="/uploads/<%= store.cover_image %>" alt="<%= store.store_name %>">
+    </div>
+  <% } %>
+
+  <div class="store-header-info">
+    <% if (store.logo_image) { %>
+      <img src="/uploads/<%= store.logo_image %>" alt="<%= store.store_name %>" class="store-logo">
+    <% } else { %>
+      <div class="store-logo-placeholder"><%= store.store_name.charAt(0) %></div>
+    <% } %>
+    <div>
+      <h1 style="margin-bottom:4px;"><%= store.store_name %></h1>
+      <p class="card-meta"><%= store.area_name %></p>
+      <% if (store.rating_average > 0) { %>
+        <p class="rating-badge">★ <%= store.rating_average.toFixed(1) %> / 5</p>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (store.description) { %>
+    <p><%= store.description %></p>
+  <% } %>
+
+  <% if (currentUser && currentUser.role === 'customer') { %>
+    <form action="/customer/messages/start" method="POST" style="margin-bottom:24px;">
+      <input type="hidden" name="storeId" value="<%= store.id %>">
+      <button type="submit" class="btn btn-secondary">تواصل مع البائع</button>
+    </form>
+  <% } else if (!currentUser) { %>
+    <p style="margin-bottom:24px;"><a href="/auth/login">سجل الدخول</a> للتواصل مع هذا المتجر.</p>
+  <% } %>
+
+  <h2>المنتجات</h2>
+  <% if (products.length === 0) { %>
+    <p>لا توجد منتجات متاحة حاليًا في هذا المتجر.</p>
+  <% } else { %>
+    <div class="grid">
+      <% products.forEach(function(product) { %>
+        <a href="/stores/<%= store.store_slug %>/products/<%= product.slug %>" class="card-link">
+          <% if (product.image_url) { %>
+            <img src="/uploads/<%= product.image_url %>" alt="<%= product.name %>" class="card-image">
+          <% } else { %>
+            <div class="card-image-placeholder">لا توجد صورة</div>
+          <% } %>
+          <div class="card-body">
+            <h3 class="card-title"><%= product.name %></h3>
+            <p class="card-price"><%= product.price.toFixed(2) %> ج.م</p>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

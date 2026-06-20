@@ -1,0 +1,172 @@
+<%- include('../partials/header', { title: product.name }) %>
+<div class="container">
+  <p style="margin-bottom:16px;">
+    <a href="/stores/<%= product.store_slug %>" style="color:var(--color-primary);text-decoration:none;font-size:0.9rem;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14" style="vertical-align:middle;margin-left:4px;"><polyline points="9 18 15 12 9 6"/></svg>
+      رجوع إلى <%= product.store_name %>
+    </a>
+  </p>
+
+  <div class="product-detail-grid">
+    <div>
+      <% if (images.length > 0) { %>
+        <img src="/uploads/<%= images[0].image_url %>" alt="<%= product.name %>" class="product-gallery-main" id="mainImage">
+        <% if (images.length > 1) { %>
+          <div class="product-gallery-thumbs">
+            <% images.forEach(function(img) { %>
+              <img src="/uploads/<%= img.image_url %>" alt="<%= product.name %>" class="thumb" onclick="document.getElementById('mainImage').src = this.src;">
+            <% }) %>
+          </div>
+        <% } %>
+      <% } else { %>
+        <div class="card-image-placeholder" style="height:360px;border-radius:12px;">لا توجد صورة</div>
+      <% } %>
+    </div>
+
+    <div>
+      <h1 style="margin:0 0 8px;font-size:1.5rem;"><%= product.name %></h1>
+      <p class="card-price" style="font-size:1.5rem;margin:0 0 12px;"><%= product.price.toFixed(2) %> ج.م</p>
+
+      <% if (product.quantity > 0) { %>
+        <p style="color:var(--color-success);font-weight:600;margin:0 0 12px;">✓ متوفر في المخزون (<%= product.quantity %>)</p>
+      <% } else { %>
+        <p style="color:var(--color-danger);font-weight:600;margin:0 0 12px;">✗ غير متوفر حاليًا</p>
+      <% } %>
+
+      <% if (product.description) { %>
+        <p style="color:var(--color-muted);line-height:1.7;margin-bottom:16px;"><%= product.description %></p>
+      <% } %>
+
+      <% if (currentUser && currentUser.role === 'customer' && product.quantity > 0) { %>
+        <form action="/customer/cart/add" method="POST" style="margin-bottom:12px;">
+          <input type="hidden" name="productId" value="<%= product.id %>">
+          <div class="form-group" style="max-width:140px;margin-bottom:10px;">
+            <label for="quantity">الكمية</label>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="<%= product.quantity %>">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            إضافة إلى السلة
+          </button>
+        </form>
+      <% } else if (!currentUser) { %>
+        <a href="/auth/login" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:12px;">
+          سجل الدخول لإضافة المنتج إلى السلة
+        </a>
+      <% } %>
+
+      <% if (currentUser && currentUser.role === 'customer') { %>
+        <form action="/customer/wishlist/toggle" method="POST" class="wishlist-toggle-btn" style="margin-bottom:20px;">
+          <input type="hidden" name="productId" value="<%= product.id %>">
+          <input type="hidden" name="redirectTo" value="/stores/<%= product.store_slug %>/products/<%= product.slug %>">
+          <button type="submit" class="btn btn-small <%= isWishlisted ? 'btn-danger' : 'btn-secondary' %>" style="width:100%;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            <%= isWishlisted ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة' %>
+          </button>
+        </form>
+      <% } %>
+
+      <!-- ====== CONTACT VENDOR SECTION ====== -->
+      <div class="product-contact-section">
+        <p class="product-contact-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          تواصل مع البائع مباشرة
+        </p>
+
+        <% if (currentUser && currentUser.role === 'customer') { %>
+          <form action="/customer/messages/start" method="POST" style="margin-bottom:10px;">
+            <input type="hidden" name="storeId" value="<%= product.store_id %>">
+            <input type="hidden" name="productName" value="<%= product.name %>">
+            <input type="hidden" name="productUrl" value="<%= `${process.env.BASE_URL || ''}/stores/${product.store_slug}/products/${product.slug}` %>">
+            <button type="submit" class="btn btn-secondary product-contact-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              تحدث مع البائع
+            </button>
+          </form>
+        <% } else if (!currentUser) { %>
+          <a href="/auth/login" class="btn btn-secondary product-contact-btn" style="margin-bottom:10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            سجل الدخول للتحدث مع البائع
+          </a>
+        <% } %>
+
+
+        <div class="product-contact-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="flex-shrink:0;margin-top:1px;stroke:#d4a017;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>⚠️ لضمان حقك وحمايتك، يرجى إتمام عملية الشراء بالكامل من خلال الموقع. إدارة الموقع غير مسؤولة عن أي اتفاقات تتم خارجه.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:32px;font-size:1.1rem;font-weight:700;">تقييمات العملاء</h2>
+  <% if (reviews.length === 0) { %>
+    <p style="color:var(--color-muted);">لا توجد تقييمات لهذا المنتج حتى الآن.</p>
+  <% } else { %>
+    <% reviews.forEach(function(review) { %>
+      <div class="review-card">
+        <div class="review-card-header">
+          <strong><%= review.reviewer_name %></strong>
+          <span class="review-stars"><%= '★'.repeat(review.rating) %><%= '☆'.repeat(5 - review.rating) %></span>
+        </div>
+        <% if (review.comment) { %><p><%= review.comment %></p><% } %>
+        <p class="card-meta"><%= review.created_at %></p>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<style>
+.product-contact-section {
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  padding: 16px;
+  background: #fafbf9;
+}
+.product-contact-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+  color: var(--color-text);
+}
+.product-contact-title svg {
+  stroke: var(--color-primary);
+}
+.product-contact-btn {
+  width: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.product-whatsapp-btn {
+  background: #25d366 !important;
+  color: #fff !important;
+  border-color: #25d366 !important;
+  margin-bottom: 12px;
+}
+.product-whatsapp-btn:hover {
+  background: #20b958 !important;
+  border-color: #20b958 !important;
+  text-decoration: none;
+}
+.product-contact-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #7c5c00;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  font-weight: 500;
+  margin-top: 4px;
+}
+</style>
+
+<%- include('../partials/footer') %>

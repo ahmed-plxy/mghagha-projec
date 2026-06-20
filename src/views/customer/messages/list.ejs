@@ -1,0 +1,21 @@
+<%- include('../../partials/header', { title: 'الرسائل' }) %>
+<div class="container">
+  <h1>الرسائل</h1>
+  <% if (conversations.length === 0) { %>
+    <p>لا توجد محادثات حتى الآن. يمكنك بدء محادثة من صفحة أي متجر.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>المتجر</th><th>آخر رسالة</th><th></th></tr></thead>
+      <tbody>
+        <% conversations.forEach(function(c) { %>
+          <tr>
+            <td><%= c.store_name %></td>
+            <td><%= c.last_message_at %></td>
+            <td><a href="/customer/messages/<%= c.id %>" class="btn btn-small btn-secondary">فتح المحادثة</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+<%- include('../../partials/footer') %>

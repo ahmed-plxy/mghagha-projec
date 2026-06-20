@@ -1,0 +1,77 @@
+<%- include('../partials/header', { title: t('app.name') }) %>
+<div class="container">
+
+  <!-- Header -->
+  <div class="page-header-row" style="margin-bottom:20px;">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:1.4rem;">لوحة تحكم البائع</h1>
+      <p style="margin:0;color:var(--color-muted);font-size:0.88rem;">🏪 <%= store.store_name %></p>
+    </div>
+    <a href="/vendor/products/new" class="btn btn-primary" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      إضافة منتج
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="gap:12px;margin-bottom:24px;">
+    <a href="/vendor/products" class="stat-card" style="text-decoration:none;flex:1;min-width:120px;">
+      <div class="stat-card-icon" style="background:#e3f3ea;">📦</div>
+      <span class="stat-number"><%= productCount %></span>
+      <span class="stat-label">إجمالي المنتجات</span>
+    </a>
+    <a href="/vendor/products" class="stat-card" style="text-decoration:none;flex:1;min-width:120px;">
+      <div class="stat-card-icon" style="background:#e3f3ea;">✅</div>
+      <span class="stat-number"><%= activeProductCount %></span>
+      <span class="stat-label">منتجات نشطة</span>
+    </a>
+    <a href="/vendor/orders?status=pending" class="stat-card" style="text-decoration:none;flex:1;min-width:120px;">
+      <div class="stat-card-icon" style="background:#fff8e1;">🕐</div>
+      <span class="stat-number"><%= pendingOrderCount || 0 %></span>
+      <span class="stat-label">طلبات قيد الانتظار</span>
+    </a>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="pf-section" style="margin-bottom:20px;">
+    <div class="pf-section-title">
+      <span>⚡</span>
+      <span>الإجراءات السريعة</span>
+    </div>
+    <div class="admin-quick-actions">
+      <a href="/vendor/products/new" class="admin-action-card">
+        <span class="admin-action-icon">➕</span>
+        <span class="admin-action-label">إضافة منتج</span>
+      </a>
+      <a href="/vendor/products" class="admin-action-card">
+        <span class="admin-action-icon">📋</span>
+        <span class="admin-action-label">منتجاتي</span>
+      </a>
+      <a href="/vendor/orders" class="admin-action-card">
+        <span class="admin-action-icon">📦</span>
+        <span class="admin-action-label">الطلبات الواردة</span>
+      </a>
+      <a href="/vendor/messages" class="admin-action-card">
+        <span class="admin-action-icon">💬</span>
+        <span class="admin-action-label">الرسائل</span>
+      </a>
+      <a href="/vendor/store/edit" class="admin-action-card">
+        <span class="admin-action-icon">⚙️</span>
+        <span class="admin-action-label">إعدادات المتجر</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Store public link -->
+  <div class="info-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <p style="margin:0 0 4px;font-weight:600;">🔗 رابط متجرك العام</p>
+      <p style="margin:0;color:var(--color-muted);font-size:0.88rem;">/stores/<%= store.store_slug %></p>
+    </div>
+    <a href="/stores/<%= store.store_slug %>" target="_blank" class="btn btn-secondary btn-small">
+      مشاهدة المتجر
+    </a>
+  </div>
+
+</div>
+<%- include('../partials/footer') %>

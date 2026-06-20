@@ -1,0 +1,55 @@
+  </main>
+  <footer class="site-footer">
+    <p>&copy; <%= new Date().getFullYear() %> <%= t('app.name') %> — <%= t('app.tagline') %></p>
+  </footer>
+  <script>
+    (function () {
+      var token = "<%= csrfToken %>";
+      var forms = document.querySelectorAll('form');
+      forms.forEach(function (form) {
+        var method = (form.getAttribute('method') || 'GET').toUpperCase();
+        if (method === 'POST') {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = '_csrf';
+          input.value = token;
+          form.appendChild(input);
+        }
+      });
+    })();
+
+    function openSideMenu() {
+      var menu = document.getElementById('sideMenu');
+      if (menu) {
+        menu.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeSideMenu() {
+      var menu = document.getElementById('sideMenu');
+      if (menu) {
+        menu.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeSideMenu();
+    });
+
+    (function() {
+      var path = window.location.pathname;
+      var items = document.querySelectorAll('.bottom-nav-item');
+      items.forEach(function(item) {
+        if (item.tagName === 'A') {
+          var href = item.getAttribute('href');
+          if (href && href !== '#' && (path === href || (href !== '/' && path.startsWith(href)))) {
+            item.classList.add('active');
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

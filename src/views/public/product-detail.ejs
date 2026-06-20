@@ -1,0 +1,76 @@
+<%- include('../partials/header', { title: product.name }) %>
+<div class="container">
+  <p><a href="/stores/<%= product.store_slug %>">&laquo; رجوع إلى <%= product.store_name %></a></p>
+
+  <div class="product-detail-grid">
+    <div>
+      <% if (images.length > 0) { %>
+        <img src="/uploads/<%= images[0].image_url %>" alt="<%= product.name %>" class="product-gallery-main" id="mainImage">
+        <% if (images.length > 1) { %>
+          <div class="product-gallery-thumbs">
+            <% images.forEach(function(img) { %>
+              <img src="/uploads/<%= img.image_url %>" alt="<%= product.name %>" class="thumb" onclick="document.getElementById('mainImage').src = this.src;">
+            <% }) %>
+          </div>
+        <% } %>
+      <% } else { %>
+        <div class="card-image-placeholder" style="height:360px;border-radius:12px;">لا توجد صورة</div>
+      <% } %>
+    </div>
+
+    <div>
+      <h1><%= product.name %></h1>
+      <p class="card-price" style="font-size:1.4rem;"><%= product.price.toFixed(2) %> ج.م</p>
+
+      <% if (product.quantity > 0) { %>
+        <p style="color: var(--color-success); font-weight: 600;">متوفر في المخزون (<%= product.quantity %>)</p>
+      <% } else { %>
+        <p style="color: var(--color-danger); font-weight: 600;">غير متوفر حاليًا</p>
+      <% } %>
+
+      <% if (product.description) { %>
+        <p><%= product.description %></p>
+      <% } %>
+
+      <% if (currentUser && currentUser.role === 'customer' && product.quantity > 0) { %>
+        <form action="/customer/cart/add" method="POST">
+          <input type="hidden" name="productId" value="<%= product.id %>">
+          <div class="form-group" style="max-width:140px;">
+            <label for="quantity">الكمية</label>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="<%= product.quantity %>">
+          </div>
+          <button type="submit" class="btn btn-primary">إضافة إلى السلة</button>
+        </form>
+      <% } else if (!currentUser) { %>
+        <a href="/auth/login" class="btn btn-primary">سجل الدخول لإضافة المنتج إلى السلة</a>
+      <% } %>
+
+      <% if (currentUser && currentUser.role === 'customer') { %>
+        <form action="/customer/wishlist/toggle" method="POST" class="wishlist-toggle-btn">
+          <input type="hidden" name="productId" value="<%= product.id %>">
+          <input type="hidden" name="redirectTo" value="/stores/<%= product.store_slug %>/products/<%= product.slug %>">
+          <button type="submit" class="btn btn-small <%= isWishlisted ? 'btn-danger' : 'btn-secondary' %>">
+            <%= isWishlisted ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة' %>
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+  <h2 style="margin-top:32px;">تقييمات العملاء</h2>
+  <% if (reviews.length === 0) { %>
+    <p>لا توجد تقييمات لهذا المنتج حتى الآن.</p>
+  <% } else { %>
+    <% reviews.forEach(function(review) { %>
+      <div class="review-card">
+        <div class="review-card-header">
+          <strong><%= review.reviewer_name %></strong>
+          <span class="review-stars"><%= '★'.repeat(review.rating) %><%= '☆'.repeat(5 - review.rating) %></span>
+        </div>
+        <% if (review.comment) { %><p><%= review.comment %></p><% } %>
+        <p class="card-meta"><%= review.created_at %></p>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

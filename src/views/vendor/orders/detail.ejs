@@ -1,0 +1,47 @@
+<%- include('../../partials/header', { title: 'تفاصيل الطلب' }) %>
+<div class="container">
+  <h1>تفاصيل الطلب <%= order.order_number %></h1>
+
+  <div class="info-card">
+    <p><strong>الحالة الحالية:</strong> <span class="badge badge-success"><%= orderStatusLabel(order.order_status) %></span></p>
+    <p><strong>عنوان التوصيل:</strong> <%= order.customer_address %></p>
+    <p><strong>رقم هاتف العميل:</strong> <%= order.customer_phone %></p>
+    <p><strong>طريقة الدفع:</strong> الدفع عند الاستلام</p>
+  </div>
+
+  <table class="data-table">
+    <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+    <tbody>
+      <% items.forEach(function(item) { %>
+        <tr>
+          <td><%= item.product_name %></td>
+          <td><%= item.quantity %></td>
+          <td><%= item.unit_price.toFixed(2) %> ج.م</td>
+          <td><%= item.subtotal.toFixed(2) %> ج.م</td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <p style="text-align:left; font-weight:700; margin-top:10px;">الإجمالي: <%= order.total_amount.toFixed(2) %> ج.م</p>
+
+  <% if (nextStatuses.length > 0) { %>
+    <h2>تحديث حالة الطلب</h2>
+    <form action="/vendor/orders/<%= order.id %>/status" method="POST" class="card-form">
+      <div class="form-group">
+        <label for="status">الحالة الجديدة</label>
+        <select id="status" name="status" required>
+          <% nextStatuses.forEach(function(s) { %>
+            <option value="<%= s %>"><%= orderStatusLabel(s) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">تحديث الحالة</button>
+    </form>
+  <% } else { %>
+    <p>لا يمكن تحديث حالة هذا الطلب بعد الآن.</p>
+  <% } %>
+
+  <a href="/vendor/orders" class="btn btn-secondary" style="margin-top:16px; display:inline-block;">رجوع إلى الطلبات</a>
+</div>
+<%- include('../../partials/footer') %>

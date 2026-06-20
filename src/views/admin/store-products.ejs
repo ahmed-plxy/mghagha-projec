@@ -1,0 +1,28 @@
+<%- include('../partials/header', { title: 'منتجات المتجر' }) %>
+<div class="container">
+  <h1>منتجات <%= store.store_name %></h1>
+  <% if (products.length === 0) { %>
+    <p>لا توجد منتجات لهذا المتجر.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+      <tbody>
+        <% products.forEach(function(p) { %>
+          <tr>
+            <td><%= p.name %></td>
+            <td><%= p.price.toFixed(2) %> ج.م</td>
+            <td><%= p.quantity %></td>
+            <td><span class="badge badge-<%= p.status === 'active' ? 'success' : 'muted' %>"><%= p.status === 'active' ? 'نشط' : 'متوقف' %></span></td>
+            <td>
+              <form action="/admin/stores/<%= store.id %>/products/<%= p.id %>/toggle-status" method="POST" class="inline-form">
+                <button type="submit" class="btn btn-small btn-secondary"><%= p.status === 'active' ? 'إيقاف' : 'تفعيل' %></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <a href="/admin/stores" class="btn btn-secondary" style="margin-top:16px; display:inline-block;">رجوع إلى المتاجر</a>
+</div>
+<%- include('../partials/footer') %>

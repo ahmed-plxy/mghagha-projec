@@ -1,0 +1,11 @@
+<%- include('../partials/header', { title: t('app.name') }) %>
+<div class="container">
+  <h1>أهلاً، <%= currentUser.fullName %></h1>
+  <p>يمكنك تصفح المتاجر والمنتجات من الصفحة الرئيسية.</p>
+
+  <div class="info-card">
+    <p>هل تريد بيع منتجاتك على متجر مغاغة؟</p>
+    <a href="/vendor/apply" class="btn btn-primary">قدّم طلب انضمام كبائع</a>
+  </div>
+</div>
+<%- include('../partials/footer') %>

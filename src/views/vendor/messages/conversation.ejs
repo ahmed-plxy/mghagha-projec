@@ -1,0 +1,28 @@
+<%- include('../../partials/header', { title: 'محادثة' }) %>
+<div class="container">
+  <h1>محادثة مع <%= customer.full_name %></h1>
+
+  <div class="chat-box" id="chatBox">
+    <% messages.forEach(function(m) { %>
+      <div class="chat-message <%= m.sender_id === currentUser.id ? 'chat-message-mine' : 'chat-message-theirs' %>">
+        <div class="chat-message-bubble">
+          <p><%= m.body %></p>
+          <span class="chat-message-time"><%= m.created_at %></span>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+  <form action="/vendor/messages/<%= conversation.id %>/send" method="POST" class="chat-form">
+    <textarea name="body" rows="2" placeholder="اكتب ردك هنا..." required></textarea>
+    <button type="submit" class="btn btn-primary">إرسال</button>
+  </form>
+
+  <a href="/vendor/messages" class="btn btn-secondary" style="margin-top:14px; display:inline-block;">رجوع إلى الرسائل</a>
+</div>
+<script>
+  var chatBox = document.getElementById('chatBox');
+  if (chatBox) { chatBox.scrollTop = chatBox.scrollHeight; }
+  setTimeout(function () { window.location.reload(); }, 15000);
+</script>
+<%- include('../../partials/footer') %>

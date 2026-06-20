@@ -1,0 +1,74 @@
+<%- include('../partials/header', { title: 'لوحة تحكم الإدارة' }) %>
+<div class="container">
+
+  <div class="page-header-row" style="margin-bottom:22px;">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:1.5rem;">لوحة تحكم الإدارة</h1>
+      <p style="margin:0;color:var(--color-muted);font-size:0.88rem;">مرحباً، مدير النظام</p>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" style="gap:12px;margin-bottom:28px;">
+    <a href="/admin/vendor-applications?status=pending" class="stat-card" style="text-decoration:none;flex:1;min-width:140px;">
+      <div class="stat-card-icon" style="background:#fff8e1;">📋</div>
+      <span class="stat-number" style="color:<%= pendingCount > 0 ? 'var(--color-danger)' : 'var(--color-primary-dark)' %>"><%= pendingCount %></span>
+      <span class="stat-label">طلبات بائعين قيد المراجعة</span>
+    </a>
+    <a href="/admin/stores" class="stat-card" style="text-decoration:none;flex:1;min-width:140px;">
+      <div class="stat-card-icon" style="background:#e3f3ea;">🏪</div>
+      <span class="stat-number"><%= storeCount %></span>
+      <span class="stat-label">المتاجر النشطة</span>
+    </a>
+    <div class="stat-card" style="flex:1;min-width:140px;">
+      <div class="stat-card-icon" style="background:#e8f0fe;">👤</div>
+      <span class="stat-number"><%= customerCount %></span>
+      <span class="stat-label">العملاء المسجلون</span>
+    </div>
+    <a href="/admin/orders" class="stat-card" style="text-decoration:none;flex:1;min-width:140px;">
+      <div class="stat-card-icon" style="background:#fce8f3;">📦</div>
+      <span class="stat-number"><%= todayOrderCount %></span>
+      <span class="stat-label">طلبات اليوم</span>
+    </a>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="pf-section" style="margin-bottom:20px;">
+    <div class="pf-section-title">
+      <span>⚡</span>
+      <span>الإجراءات السريعة</span>
+    </div>
+    <div class="admin-quick-actions">
+      <a href="/admin/vendor-applications" class="admin-action-card">
+        <span class="admin-action-icon">👥</span>
+        <span class="admin-action-label">طلبات البائعين</span>
+        <% if (pendingCount > 0) { %>
+          <span class="badge badge-danger" style="background:var(--color-danger);color:#fff;margin-top:4px;"><%= pendingCount %> جديد</span>
+        <% } %>
+      </a>
+      <a href="/admin/stores" class="admin-action-card">
+        <span class="admin-action-icon">🏪</span>
+        <span class="admin-action-label">إدارة المتاجر</span>
+      </a>
+      <a href="/admin/orders" class="admin-action-card">
+        <span class="admin-action-icon">📦</span>
+        <span class="admin-action-label">إدارة الطلبات</span>
+      </a>
+      <a href="/admin/reviews" class="admin-action-card">
+        <span class="admin-action-icon">⭐</span>
+        <span class="admin-action-label">مراجعة التقييمات</span>
+      </a>
+    </div>
+  </div>
+
+  <% if (pendingCount > 0) { %>
+  <div class="info-card" style="border-right:4px solid var(--color-danger);background:#fdf8f8;">
+    <p style="margin:0;font-weight:600;">
+      ⚠ يوجد <strong style="color:var(--color-danger);"><%= pendingCount %></strong> طلب انضمام بائع بانتظار مراجعتك.
+      <a href="/admin/vendor-applications?status=pending" style="color:var(--color-primary);margin-right:8px;">مراجعة الطلبات ←</a>
+    </p>
+  </div>
+  <% } %>
+
+</div>
+<%- include('../partials/footer') %>

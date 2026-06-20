@@ -1,0 +1,97 @@
+<%- include('../../partials/header', { title: 'محادثة مع ' + customer.full_name }) %>
+<div class="container" style="padding-bottom:0;">
+  <div class="chat-page">
+
+    <div class="chat-header">
+      <a href="/vendor/messages" class="chat-header-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+        رجوع
+      </a>
+      <div class="chat-header-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="chat-header-info">
+        <p class="chat-header-name"><%= customer.full_name %></p>
+        <% if (customer.phone && !customer.phone.startsWith('google_')) { %>
+          <span class="chat-header-subtitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.69 12 19.79 19.79 0 011.58 3.45 2 2 0 013.55 1.27h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.91 8.82a16 16 0 006.27 6.27l1.62-1.62a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <%= customer.phone %>
+          </span>
+        <% } else { %>
+          <span class="chat-header-subtitle">عميل</span>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+      <% if (messages.length === 0) { %>
+        <div class="chat-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <p style="margin:0;font-size:0.92rem;">لا توجد رسائل بعد.</p>
+        </div>
+      <% } else { %>
+        <% messages.forEach(function(m) { %>
+          <% const isMine = m.sender_id === currentUser.id; %>
+          <div class="chat-message <%= isMine ? 'chat-message-mine' : 'chat-message-theirs' %>">
+            <div class="chat-bubble-avatar">
+              <% if (isMine) { %>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              <% } else { %>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <% } %>
+            </div>
+            <div class="chat-message-bubble">
+              <% m.body.split('\n').forEach(function(line) { %>
+                <% if (line.startsWith('http')) { %>
+                  <a href="<%= line %>" style="color:inherit;opacity:0.85;font-size:0.82rem;word-break:break-all;" target="_blank"><%= line %></a>
+                <% } else { %>
+                  <p><%= line %></p>
+                <% } %>
+              <% }) %>
+              <span class="chat-message-time">
+                <%= new Date(m.created_at + 'Z').toLocaleTimeString('ar-EG', {timeZone:'Africa/Cairo', hour:'2-digit', minute:'2-digit'}) %>
+              </span>
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <div class="chat-input-bar">
+      <div class="chat-refresh-bar">
+        <span class="chat-refresh-dot"></span>يتجدد تلقائياً كل 15 ثانية
+      </div>
+      <form action="/vendor/messages/<%= conversation.id %>/send" method="POST" class="chat-form" id="chatForm">
+        <div class="chat-form-inner">
+          <textarea
+            name="body"
+            id="chatInput"
+            rows="1"
+            placeholder="اكتب ردك هنا..."
+            required
+            onInput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+          ></textarea>
+        </div>
+        <button type="submit" class="chat-send-btn" aria-label="إرسال">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  var chatBox = document.getElementById('chatBox');
+  if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+  document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (this.value.trim()) document.getElementById('chatForm').submit();
+    }
+  });
+
+  setTimeout(function() { window.location.reload(); }, 15000);
+</script>
+<%- include('../../partials/footer') %>

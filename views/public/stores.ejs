@@ -1,0 +1,42 @@
+<%- include('../partials/header', { title: t('app.name') }) %>
+<div class="container">
+  <h1>المتاجر</h1>
+
+  <form action="/stores" method="GET" class="filter-bar">
+    <div class="form-group">
+      <label for="search">بحث</label>
+      <input type="text" id="search" name="search" value="<%= filters.search %>" placeholder="اسم المتجر">
+    </div>
+    <div class="form-group">
+      <label for="areaId">المنطقة</label>
+      <select id="areaId" name="areaId">
+        <option value="">كل المناطق</option>
+        <% areas.forEach(function(area) { %>
+          <option value="<%= area.id %>" <%= Number(filters.areaId) === area.id ? 'selected' : '' %>><%= area.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">تصفية</button>
+  </form>
+
+  <% if (stores.length === 0) { %>
+    <p>لا توجد متاجر مطابقة لبحثك.</p>
+  <% } else { %>
+    <div class="grid">
+      <% stores.forEach(function(store) { %>
+        <a href="/stores/<%= store.store_slug %>" class="card-link">
+          <% if (store.cover_image) { %>
+            <img src="/uploads/<%= store.cover_image %>" alt="<%= store.store_name %>" class="card-image">
+          <% } else { %>
+            <div class="card-image-placeholder">لا توجد صورة</div>
+          <% } %>
+          <div class="card-body">
+            <h3 class="card-title"><%= store.store_name %></h3>
+            <p class="card-meta"><%= store.area_name %></p>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>
