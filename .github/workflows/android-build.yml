@@ -25,11 +25,19 @@ jobs:
         with:
           node-version: '20'
 
+      # ── Version ───────────────────────────────────────────────────────────────
+      - name: Set version from run number
+        run: |
+          echo "VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
+          echo "VERSION_NAME=1.0.${{ github.run_number }}"  >> $GITHUB_ENV
+          echo "Build #${{ github.run_number }}  →  versionCode=${{ github.run_number }}, versionName=1.0.${{ github.run_number }}"
+
+      # ── Dependencies ──────────────────────────────────────────────────────────
       - name: Install mobile-app dependencies
         working-directory: mobile-app
         run: npm install
 
-      # ── Icon & Splash ──────────────────────────────────────────────────────
+      # ── Icon & Splash ─────────────────────────────────────────────────────────
       - name: Generate icon and splash assets
         working-directory: mobile-app
         run: |
@@ -53,7 +61,7 @@ jobs:
         working-directory: mobile-app
         run: npx @capacitor/assets generate --iconBackgroundColor '#1e7a4c' --splashBackgroundColor '#1e7a4c'
 
-      # ── Android Platform ──────────────────────────────────────────────────
+      # ── Android Platform ──────────────────────────────────────────────────────
       - name: Add Android platform
         working-directory: mobile-app
         run: npx cap add android || echo "Android platform already exists — skipping."
@@ -62,34 +70,31 @@ jobs:
         working-directory: mobile-app
         run: npx cap sync android
 
-      # ── Signing Setup ─────────────────────────────────────────────────────
-      - name: Decode keystore from secret
-        working-directory: mobile-app
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      # ── Signing & Version Injection ───────────────────────────────────────────
+      - name: Check if signing secrets exist
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "⚠️  KEYSTORE_BASE64 secret not set yet."
-            echo "    Run the 'Generate Release Keystore' workflow first,"
-            echo "    then add the 4 secrets to this repo."
-            echo "    Falling back to a DEBUG build for now."
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "SIGNING_AVAILABLE=false" >> $GITHUB_ENV
+            echo "⚠️  No KEYSTORE_BASE64 secret — will build debug APK as fallback."
           else
-            echo "$KEYSTORE_BASE64" | base64 -d > mghagha-release.jks
             echo "SIGNING_AVAILABLE=true" >> $GITHUB_ENV
-            echo "✅ Keystore decoded successfully."
+            echo "✅ Signing secrets found."
           fi
 
-      - name: Inject signing config into build.gradle
+      - name: Decode keystore
         if: env.SIGNING_AVAILABLE == 'true'
+        working-directory: mobile-app
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > mghagha-release.jks
+
+      - name: Inject version + signing into build.gradle
         working-directory: mobile-app
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
         run: node inject-signing.js
 
-      # ── Build ─────────────────────────────────────────────────────────────
+      # ── Build ─────────────────────────────────────────────────────────────────
       - name: Make Gradle wrapper executable
         working-directory: mobile-app/android
         run: chmod +x gradlew
@@ -99,47 +104,48 @@ jobs:
         working-directory: mobile-app/android
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Build DEBUG APK (fallback — no secrets yet)
+      - name: Build DEBUG APK (fallback — secrets not set yet)
         if: env.SIGNING_AVAILABLE == 'false'
         working-directory: mobile-app/android
         run: ./gradlew assembleDebug --no-daemon
 
-      # ── Align & Verify ────────────────────────────────────────────────────
-      - name: Zipalign the release APK
+      # ── Zipalign + apksigner (extra hardening for release) ────────────────────
+      - name: Zipalign and verify signed APK
         if: env.SIGNING_AVAILABLE == 'true'
         working-directory: mobile-app/android
         run: |
-          UNSIGNED=app/build/outputs/apk/release/app-release-unsigned.apk
-          ALIGNED=app/build/outputs/apk/release/app-release-aligned.apk
-          SIGNED=app/build/outputs/apk/release/app-release-signed.apk
+          UNSIGNED=$(find app/build/outputs/apk/release -name "*unsigned*.apk" | head -1)
+          ZIPALIGN=$(find $ANDROID_HOME -name zipalign 2>/dev/null | head -1)
+          APKSIGNER=$(find $ANDROID_HOME -name apksigner 2>/dev/null | head -1)
 
-          # zipalign is part of the Android SDK bundled with the runner
-          ZIPALIGN=$(find $ANDROID_HOME -name zipalign | head -1)
-          APKSIGNER=$(find $ANDROID_HOME -name apksigner | head -1)
+          if [ -n "$UNSIGNED" ] && [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
+            ALIGNED=app/build/outputs/apk/release/app-release-aligned.apk
+            SIGNED=app/build/outputs/apk/release/mghagha-v${{ env.VERSION_NAME }}-signed.apk
 
-          if [ -f "$UNSIGNED" ]; then
             $ZIPALIGN -v 4 "$UNSIGNED" "$ALIGNED"
             $APKSIGNER sign \
               --ks ../mghagha-release.jks \
               --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
               --key-alias ${{ secrets.KEY_ALIAS }} \
               --key-pass pass:${{ secrets.KEY_PASSWORD }} \
-              --out "$SIGNED" \
-              "$ALIGNED"
-            echo "APK_PATH=$SIGNED" >> $GITHUB_ENV
-            echo "✅ APK signed and zipaligned."
+              --out "$SIGNED" "$ALIGNED"
+
+            $APKSIGNER verify "$SIGNED" && echo "✅ APK signature verified."
           else
-            # Gradle signing config already signed it
-            APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-            echo "APK_PATH=$APK" >> $GITHUB_ENV
+            # Gradle's own signingConfig already signed it — just rename for clarity
+            SRC=$(find app/build/outputs/apk/release -name "app-release.apk" | head -1)
+            if [ -n "$SRC" ]; then
+              cp "$SRC" app/build/outputs/apk/release/mghagha-v${{ env.VERSION_NAME }}-signed.apk
+            fi
+            echo "Gradle-signed APK ready."
           fi
 
-      # ── Upload ────────────────────────────────────────────────────────────
+      # ── Upload ────────────────────────────────────────────────────────────────
       - name: Upload signed release APK
         if: env.SIGNING_AVAILABLE == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: mghagha-SIGNED-release-apk
+          name: mghagha-v${{ env.VERSION_NAME }}-SIGNED
           path: mobile-app/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
@@ -147,22 +153,26 @@ jobs:
         if: env.SIGNING_AVAILABLE == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: mghagha-debug-apk
+          name: mghagha-v${{ env.VERSION_NAME }}-debug
           path: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
 
-      # ── Summary ───────────────────────────────────────────────────────────
+      # ── Summary ───────────────────────────────────────────────────────────────
       - name: Build summary
         run: |
-          echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## متجر مغاغة — Build #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **versionCode** | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **versionName** | 1.0.${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Signed** | ${{ env.SIGNING_AVAILABLE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Backend** | https://mghagha-projectzip--josenberlo.replit.app |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "$SIGNING_AVAILABLE" = "true" ]; then
-            echo "✅ **SIGNED release APK** — no Play Protect warnings, safe to share" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Signed release APK** — safe to install, no Play Protect warnings." >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ **Debug APK** — secrets not configured yet. Run the keystore workflow first." >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Debug APK** — add the 4 signing secrets then push again to get a signed release." >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**App:** متجر مغاغة" >> $GITHUB_STEP_SUMMARY
-          echo "**Backend:** https://mghagha-projectzip--josenberlo.replit.app" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⬆️ Download the APK from the **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
+          echo "⬆️ Download from **Artifacts** above." >> $GITHUB_STEP_SUMMARY
