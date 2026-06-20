@@ -24,18 +24,46 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: mobile-app/package-lock.json
 
       - name: Install mobile-app dependencies
         working-directory: mobile-app
         run: npm install
 
+      - name: Generate icon and splash assets with ImageMagick
+        working-directory: mobile-app
+        run: |
+          mkdir -p assets
+
+          # App icon: green circle with Arabic "م" letter on 1024x1024
+          convert -size 1024x1024 xc:'#1e7a4c' \
+            -fill '#ffffff' \
+            -font /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf \
+            -pointsize 420 \
+            -gravity center \
+            -annotate 0 'M' \
+            assets/icon-only.png
+
+          # Splash screen: 2732x2732 green background with store name
+          convert -size 2732x2732 xc:'#1e7a4c' \
+            -fill '#ffffff' \
+            -font /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf \
+            -pointsize 220 \
+            -gravity center \
+            -annotate 0 'Mghagha Store' \
+            assets/splash.png
+
+          echo "Assets generated:"
+          ls -lh assets/
+
+      - name: Generate Capacitor icon and splash resources
+        working-directory: mobile-app
+        run: npx @capacitor/assets generate --iconBackgroundColor '#1e7a4c' --splashBackgroundColor '#1e7a4c'
+
       - name: Add Android platform
         working-directory: mobile-app
-        run: npx cap add android || echo "Android platform already exists, skipping."
+        run: npx cap add android || echo "Android platform already exists — skipping."
 
-      - name: Sync Capacitor
+      - name: Sync Capacitor with Android
         working-directory: mobile-app
         run: npx cap sync android
 
@@ -47,15 +75,18 @@ jobs:
         working-directory: mobile-app/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mghagha-debug-apk
           path: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
+          retention-days: 14
 
-      - name: Show APK info
-        working-directory: mobile-app/android
+      - name: Build summary
         run: |
-          echo "✅ APK built successfully!"
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
+          echo "## ✅ APK Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**App:** متجر مغاغة" >> $GITHUB_STEP_SUMMARY
+          echo "**Backend:** https://mghagha-projectzip--josenberlo.replit.app" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the APK from the **Artifacts** section above ⬆️" >> $GITHUB_STEP_SUMMARY

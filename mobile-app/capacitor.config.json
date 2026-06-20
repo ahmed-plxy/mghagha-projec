@@ -3,13 +3,23 @@
   "appName": "متجر مغاغة",
   "webDir": "www",
   "server": {
-    "url": "YOUR_DEPLOYED_REPLIT_URL_HERE",
-    "cleartext": false,
-    "androidScheme": "https"
+    "url": "https://mghagha-projectzip--josenberlo.replit.app",
+    "androidScheme": "https",
+    "cleartext": false
   },
   "android": {
-    "allowMixedContent": false,
-    "captureInput": true,
-    "webContentsDebuggingEnabled": false
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#1e7a4c",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#1e7a4c"
+    }
   }
 }
