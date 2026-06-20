@@ -2,6 +2,7 @@ const personalListingRepo = require('../repositories/personalListing.repo');
 const categoryRepo = require('../repositories/category.repo');
 const { productImageUpload, getRelativeUploadPath } = require('../middleware/upload');
 const multer = require('multer');
+const { containsBannedWord } = require('../utils/blacklist');
 
 const CATEGORY_ICONS = {
   'العربيات': '🚗', 'الموبايلات': '📱', 'أجهزة منزلية': '🏠', 'أثاث منزلي': '🛋️',
@@ -50,7 +51,14 @@ function submitListing(req, res) {
 
     const { name, price, description, categoryId } = req.body;
     const errors = [];
-    if (!name || !name.trim()) errors.push('اكتب اسم الحاجة اللي بتبيعها');
+    if (!name || !name.trim()) {
+      errors.push('اكتب اسم الحاجة اللي بتبيعها');
+    } else if (containsBannedWord(name)) {
+      errors.push('اسم الإعلان فيه كلمة ممنوعة.');
+    }
+    if (description && containsBannedWord(description)) {
+      errors.push('وصف الإعلان فيه كلمة ممنوعة.');
+    }
     if (!price || isNaN(Number(price)) || Number(price) < 0) errors.push('اكتب سعر صح');
     if (errors.length) return renderErrors(errors, req.body);
 

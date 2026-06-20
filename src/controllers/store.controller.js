@@ -2,6 +2,7 @@ const storeRepo = require('../repositories/store.repo');
 const productRepo = require('../repositories/product.repo');
 const orderRepo = require('../repositories/order.repo');
 const { getRelativeUploadPath } = require('../middleware/upload');
+const { containsBannedWord } = require('../utils/blacklist');
 
 function dashboard(req, res) {
   const products = productRepo.findAllByStore(req.store.id);
@@ -33,6 +34,11 @@ function update(req, res) {
   const files = req.files || {};
   const logoFile = files.logoImage ? files.logoImage[0] : null;
   const coverFile = files.coverImage ? files.coverImage[0] : null;
+
+  if (description && containsBannedWord(description)) {
+    req.session.flash = { type: 'error', text: 'وصف المحل فيه كلمة ممنوعة.' };
+    return res.redirect('/vendor/store/edit');
+  }
 
   const parsedFee = parseFloat(shippingFee);
   const validFee = !isNaN(parsedFee) && parsedFee >= 0 ? parsedFee : 0;

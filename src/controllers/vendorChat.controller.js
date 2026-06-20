@@ -3,19 +3,7 @@ const messageRepo = require('../repositories/message.repo');
 const userRepo = require('../repositories/user.repo');
 const notificationService = require('../services/notification.service');
 const { isNonEmptyString } = require('../utils/validators');
-const path = require('path');
-const fs = require('fs');
-
-let bannedWords = [];
-try {
-  const bwPath = path.join(__dirname, '..', '..', 'data', 'banned-words.json');
-  bannedWords = JSON.parse(fs.readFileSync(bwPath, 'utf8'));
-} catch (e) {}
-
-function checkBannedWords(text) {
-  const lower = text.toLowerCase();
-  return bannedWords.find(w => lower.includes(w.toLowerCase())) || null;
-}
+const { containsBannedWord } = require('../utils/blacklist');
 
 function list(req, res) {
   const conversations = conversationRepo.findByStore(req.store.id);
@@ -56,9 +44,10 @@ function send(req, res) {
   }
 
   const trimmed = body.trim();
-  const hitWord = checkBannedWords(trimmed);
-  if (hitWord && !conversation.is_flagged) {
-    conversationRepo.flagConversation(conversation.id, `كلمة مشبوهة: "${hitWord}"`);
+
+  if (containsBannedWord(trimmed)) {
+    req.session.flash = { type: 'error', text: 'الرسالة دي فيها كلام ممنوع ومش هتتبعت.' };
+    return res.redirect(`/vendor/messages/${conversation.id}`);
   }
 
   messageRepo.create(conversation.id, req.session.user.id, trimmed);

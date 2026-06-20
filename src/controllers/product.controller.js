@@ -4,6 +4,7 @@ const categoryRepo = require('../repositories/category.repo');
 const slugService = require('../services/slug.service');
 const { getRelativeUploadPath } = require('../middleware/upload');
 const { isNonEmptyString } = require('../utils/validators');
+const { containsBannedWord } = require('../utils/blacklist');
 
 function buildRenderData(overrides = {}) {
   const { mains, subsMap } = categoryRepo.getStructuredCategories();
@@ -51,9 +52,17 @@ function showCreateForm(req, res) {
 
 function validateProductInput(body) {
   const errors = [];
-  const { name, price, quantity } = body;
+  const { name, description, price, quantity } = body;
 
-  if (!isNonEmptyString(name)) errors.push('اسم المنتج مطلوب.');
+  if (!isNonEmptyString(name)) {
+    errors.push('اسم المنتج مطلوب.');
+  } else if (containsBannedWord(name)) {
+    errors.push('اسم المنتج فيه كلمة ممنوعة.');
+  }
+
+  if (description && containsBannedWord(description)) {
+    errors.push('وصف المنتج فيه كلمة ممنوعة.');
+  }
 
   const priceNum = Number(price);
   if (!price || isNaN(priceNum) || priceNum < 0) errors.push('حط سعر صح للمنتج.');

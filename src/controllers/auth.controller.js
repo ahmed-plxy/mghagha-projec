@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const userRepo = require('../repositories/user.repo');
 const { isValidEgyptianPhone, isValidEmail, isValidPassword, isNonEmptyString, isValidFullName } = require('../utils/validators');
+const { containsBannedWord } = require('../utils/blacklist');
 
 function showLogin(req, res) {
   res.render('auth/login', { title: 'ادخل', errors: null, old: {} });
@@ -43,6 +44,7 @@ function register(req, res) {
   const errors = [];
 
   if (!isValidFullName(fullName)) errors.push('حط اسمك الحقيقي (3 حروف على الأقل، بدون أرقام أو رموز).');
+  else if (containsBannedWord(fullName)) errors.push('الاسم فيه كلمة ممنوعة.');
   if (!isValidEgyptianPhone(phone)) errors.push('رقم التليفون مش صح (مثال: 01012345678).');
   if (!isValidEmail(email)) errors.push('الإيميل مش صح.');
   if (!isValidPassword(password)) errors.push('كلمة السر لازم تكون 8 حروف على الأقل.');
