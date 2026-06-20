@@ -1,0 +1,15 @@
+{
+  "appId": "com.mghagha.store",
+  "appName": "متجر مغاغة",
+  "webDir": "www",
+  "server": {
+    "url": "YOUR_DEPLOYED_REPLIT_URL_HERE",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

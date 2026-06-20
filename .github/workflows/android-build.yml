@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile-app/package-lock.json
+
+      - name: Install mobile-app dependencies
+        working-directory: mobile-app
+        run: npm install
+
+      - name: Add Android platform
+        working-directory: mobile-app
+        run: npx cap add android || echo "Android platform already exists, skipping."
+
+      - name: Sync Capacitor
+        working-directory: mobile-app
+        run: npx cap sync android
+
+      - name: Make Gradle wrapper executable
+        working-directory: mobile-app/android
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        working-directory: mobile-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mghagha-debug-apk
+          path: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+      - name: Show APK info
+        working-directory: mobile-app/android
+        run: |
+          echo "✅ APK built successfully!"
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
