@@ -12,6 +12,7 @@ router.get('/about', publicController.aboutPage);
 router.get('/faq', publicController.faqPage);
 router.get('/help', publicController.helpPage);
 router.get('/privacy', publicController.privacyPage);
+router.get('/terms', publicController.termsPage);
 
 router.get('/classifieds', personalListingController.browseClassifieds);
 router.get('/classifieds/:slug', personalListingController.classifiedDetail);

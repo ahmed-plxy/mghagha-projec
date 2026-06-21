@@ -58,8 +58,14 @@ function updatePhone(id, phone) {
   return findById(id);
 }
 
+function updateProfile(id, { fullName, email }) {
+  db.prepare('UPDATE users SET full_name = ?, email = ? WHERE id = ?')
+    .run(fullName, email || null, id);
+  return findById(id);
+}
+
 module.exports = {
   findById, findByPhone, findByEmail, createUser,
   findByGoogleId, findOrCreateGoogleUser,
-  findAllNonAdmin, setStatus, updatePhone
+  findAllNonAdmin, setStatus, updatePhone, updateProfile
 };

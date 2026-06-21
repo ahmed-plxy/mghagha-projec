@@ -13,6 +13,7 @@ const personalListingController = require('../controllers/personalListing.contro
 router.use(requireRole('customer'));
 
 router.get('/dashboard', customerController.dashboard);
+router.post('/profile/update', customerController.updateProfile);
 router.get('/cart', cartController.view);
 router.post('/cart/add', cartController.addItem);
 router.post('/cart/items/:id/update', cartController.updateItem);

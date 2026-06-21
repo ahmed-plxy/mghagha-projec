@@ -1,0 +1,58 @@
+Mghagha Application Upgrade
+​Part 1: Customer Path (Customer Journey & UX)
+​1. Product Details Page Upgrade
+​Top Cards Architecture:
+​Reconstruct the layout sequence starting with a top Image Carousel Container utilizing a fixed aspect ratio (e.g., 4:3) to prevent image distortion, stretching, or truncation.
+​Position the product name immediately below the image container using a prominent bold typography.
+​Place the product price below or adjacent to the product name with distinct, high-contrast coloring.
+​Action Buttons (Cart & Favorites):
+​Eliminate the vertical stacking layout where buttons occupy the full width of the screen.
+​Re-architect the section into a horizontal layout using a flexbox model with balanced spacing.
+​Allocate 70% of the horizontal space to the "Add to Cart" button and 30% to the "Favorites" button (represented by an optimized heart icon) to ensure ergonomic thumb accessibility.
+​Dynamic Specifications Card:
+​Implement a conditional rendering logic in the front-end architecture that evaluates the primary category of the product.
+​If the product belongs to the "Mobiles & Smartphones" category, a dedicated structural specifications card must appear, displaying structured data fields: (Model, Device Type, RAM Capacity, Internal Storage, Device Condition [Used/New], Included Accessories).
+​If the product belongs to a different category, the smartphone specifications card must remain hidden, and a specific layout matching that category's attributes must be rendered.
+​Ratings and Reviews System:
+​Integrate a dedicated user feedback section at the lower portion of the interface.
+​The section consists of a text input area for written user feedback, accompanied by an interactive 5-star rating component for quantitative evaluation.
+​Display existing user reviews chronologically in a clean list format showing the account name, submission date, star rating, and the text review.
+​Merchant Data, Security Tools, and Communication Channels:
+​Display a clear attribution text: "Published by: [Merchant Name]".
+​Position a subtle red "Report" button adjacent to the merchant's name. Clicking this button triggers a modal window prompting the user to select a violation reason (e.g., fraudulent listing, prohibited item) to be sent directly to the administrative dashboard.
+​Integrate two direct communication buttons: an "Internal Chat" button to initiate an instant session via the in-app messaging infrastructure, and a "WhatsApp Communication" button that deep-links directly to the merchant's verified phone number with a pre-filled contextual message.
+​Related Items Section:
+​Embed a horizontal scrolling list below the main product details under the title "Similar Ads".
+​Render a maximum of 3 product cards within immediate view, ending the horizontal carousel with a "View More" button that redirects the customer to the main search page filtered by that specific category.
+​Fixed Safety Awareness Card:
+​Append an un-dismissable informational container at the absolute bottom of the page titled: "Your Safety Matters - Powered by Mghagha App".
+​Explicitly state four foundational safety guidelines:
+​Always meet the seller in a public, well-lit, and crowded location.
+​Never transfer funds or down payments prior to inspecting and receiving the item in person.
+​Thoroughly examine the item's technical and physical condition before concluding the transaction.
+​Mghagha Application operates strictly as an advertising intermediary and does not guarantee external payment or shipping operations.
+​2. Image Handling and Interface Layout Refinement
+​Sponsored Ads Card:
+​Correct the aggressive cropping and stretching of images inside the sponsored banner component on the homepage.
+​Apply container properties that constrain the maximum height and width of the image while maintaining its native proportions, utilizing a neutral light-gray background to fill any empty space without cutting off text or critical visuals.
+​Homepage Layout Symmetry:
+​Standardize vertical and horizontal padding and margins between the top sponsored banner, the search bar, and the lower category grid to create a unified, structured visual flow.
+​Seller Store Profile Interface:
+​Redesign the interface to eliminate disorganized components.
+​Introduce a structured header card displaying the seller's profile image, verified name, account creation date, and cumulative rating score.
+​Implement a rigid grid system for the seller's active listings, forcing all product thumbnail containers into a uniform square format (1:1) to resolve layout breaks caused by varying image heights.
+​3. Search and Authentication Infrastructure
+​Search Architecture:
+​Address the issue causing automated asynchronous API requests to fire on every single keystroke, which degrades application performance.
+​Implement a search mechanism that introduces a controlled time delay (debounce) after typing ceases before executing the request, or limits the search execution strictly to the interaction with the search icon or the keyboard's "Enter" key.
+​Sign-Up Interface Optimization:
+​Privacy Policy Consent: Integrate a mandatory checkbox component stating: "I agree to the Privacy Policy and the Terms of the Purchase & Sale Agreement of Mghagha Application". The account creation button must remain disabled until this checkbox is explicitly marked.
+​Geographical Region Sorting: Replace the unstructured free-text input field for locations with a hierarchical dropdown selection list organizing governorates, centers, and sub-villages for structured data capture.
+​Customer Profile Interface ("My Account"):
+​Restructure the interface to display user credentials in clearly defined data fields: (Full Name, Phone Number, Email Address, Selected Region).
+​Field Permissions: Grant write-access permissions exclusively to the "Full Name" and "Email Address" fields. Lock the "Phone Number" field entirely with a visible secure lock state to prevent modification post-verification, ensuring platform security.
+​4. General Support and Legal Document Updates
+​Unified Technical Support Number: Systematically replace the legacy support contact number across all application files, interfaces, and contact pages with the updated number: 201006039597.
+​Social Media Cleanup: Permanently remove all hyperlinked icons and references to Facebook and Instagram from the footer and contact interfaces.
+​Dedicated WhatsApp Integration: Retain the WhatsApp icon as the sole external communication channel, configuring it to launch a direct support session to the updated unified number.
+​Legal Documentation Displays: Establish two distinct screens accessible via the side menu and registration footers: one displaying the comprehensive "Privacy Policy", and the second displaying the "Terms of Purchase and Sale".

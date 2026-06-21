@@ -220,7 +220,53 @@ function productDetail(req, res) {
   const isWishlisted = req.session.user && req.session.user.role === 'customer'
     ? wishlistRepo.isInWishlist(req.session.user.id, product.id)
     : false;
-  res.render('public/product-detail', { title: product.name, product, images, reviews, isWishlisted });
+
+  let category = null;
+  let parentCategory = null;
+  let isMobileCategory = false;
+  if (product.category_id) {
+    category = categoryRepo.findById ? categoryRepo.findById(product.category_id) : null;
+    if (!category) {
+      try {
+        const db = require('../config/db');
+        category = db.prepare('SELECT * FROM categories WHERE id = ?').get(product.category_id);
+      } catch (e) {}
+    }
+    if (category && category.parent_id) {
+      try {
+        const db = require('../config/db');
+        parentCategory = db.prepare('SELECT * FROM categories WHERE id = ?').get(category.parent_id);
+      } catch (e) {}
+    }
+    const catSlug = (parentCategory || category || {}).slug || '';
+    isMobileCategory = catSlug === 'mobiles' || catSlug === 'mobile-phones';
+  }
+
+  let parsedAttributes = {};
+  if (product.product_attributes) {
+    try { parsedAttributes = JSON.parse(product.product_attributes); } catch (e) {}
+  }
+
+  let relatedProducts = [];
+  try {
+    relatedProducts = productRepo.findPublicProducts({
+      categoryId: product.category_id || undefined,
+      limit: 7
+    }).filter(p => p.id !== product.id).slice(0, 6);
+  } catch (e) {}
+
+  res.render('public/product-detail', {
+    title: product.name,
+    product,
+    images,
+    reviews,
+    isWishlisted,
+    isMobileCategory,
+    parsedAttributes,
+    relatedProducts,
+    category,
+    parentCategory
+  });
 }
 
 function aboutPage(req, res) {
@@ -239,4 +285,8 @@ function privacyPage(req, res) {
   res.render('public/privacy', { title: 'سياسة الخصوصية' });
 }
 
-module.exports = { landing, listStores, storeProfile, listProducts, productDetail, aboutPage, faqPage, helpPage, privacyPage };
+function termsPage(req, res) {
+  res.render('public/terms', { title: 'اتفاقية البيع والشراء وسياسة الخصوصية' });
+}
+
+module.exports = { landing, listStores, storeProfile, listProducts, productDetail, aboutPage, faqPage, helpPage, privacyPage, termsPage };
