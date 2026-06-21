@@ -2,21 +2,15 @@
   "name": "mghagha-store-mobile",
   "version": "1.0.0",
   "private": true,
-  "description": "Android wrapper (Capacitor) for Mghagha Store — loads the live website inside a native shell.",
-  "scripts": {
-    "sync": "npx cap sync android",
-    "open:android": "npx cap open android",
-    "add:android": "npx cap add android"
-  },
+  "description": "Android wrapper (Capacitor) for Mghagha Store.",
   "dependencies": {
-    "@capacitor/android": "^6.1.2",
-    "@capacitor/app": "^6.0.1",
-    "@capacitor/core": "^6.1.2",
-    "@capacitor/splash-screen": "^6.0.2",
-    "@capacitor/status-bar": "^6.0.1"
+    "@capacitor/android": "6.1.2",
+    "@capacitor/app": "6.0.1",
+    "@capacitor/core": "6.1.2",
+    "@capacitor/splash-screen": "6.0.2",
+    "@capacitor/status-bar": "6.0.1"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/cli": "6.1.2"
   }
 }
