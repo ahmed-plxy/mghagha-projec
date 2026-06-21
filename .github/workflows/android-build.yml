@@ -11,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ── Checkout ──────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ── Toolchain ─────────────────────────────────────────────────────────────
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -29,64 +31,77 @@ jobs:
       - name: Set version from run number
         run: |
           echo "VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
-          echo "VERSION_NAME=1.0.${{ github.run_number }}"  >> $GITHUB_ENV
-          echo "Build #${{ github.run_number }}  →  versionCode=${{ github.run_number }}, versionName=1.0.${{ github.run_number }}"
+          echo "VERSION_NAME=1.0.${{ github.run_number }}" >> $GITHUB_ENV
+          echo "Build #${{ github.run_number }} — versionCode=${{ github.run_number }}, versionName=1.0.${{ github.run_number }}"
 
       # ── Dependencies ──────────────────────────────────────────────────────────
-      - name: Install mobile-app dependencies
+      - name: Install mobile-app dependencies (including devDependencies)
         working-directory: mobile-app
-        run: npm install
+        run: npm install --include=dev
 
       # ── Icon & Splash ─────────────────────────────────────────────────────────
-      - name: Generate icon and splash assets
+      - name: Generate icon and splash assets with ImageMagick
         working-directory: mobile-app
         run: |
           mkdir -p assets
 
+          # Find any bold/regular font available on this runner
+          FONT=$(fc-match --format="%{file}" "DejaVu Sans:bold" 2>/dev/null || true)
+          if [ -z "$FONT" ] || [ ! -f "$FONT" ]; then
+            FONT=$(find /usr/share/fonts -name "*.ttf" | head -1)
+          fi
+          echo "Using font: $FONT"
+
           convert -size 1024x1024 xc:'#1e7a4c' \
             -fill '#ffffff' \
-            -font /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf \
+            -font "$FONT" \
             -pointsize 420 -gravity center -annotate 0 'M' \
             assets/icon-only.png
 
           convert -size 2732x2732 xc:'#1e7a4c' \
             -fill '#ffffff' \
-            -font /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf \
-            -pointsize 220 -gravity center -annotate 0 'Mghagha Store' \
+            -font "$FONT" \
+            -pointsize 200 -gravity center -annotate 0 'Mghagha Store' \
             assets/splash.png
 
           echo "Assets generated:" && ls -lh assets/
 
       - name: Generate Capacitor icon and splash resources
         working-directory: mobile-app
-        run: npx @capacitor/assets generate --iconBackgroundColor '#1e7a4c' --splashBackgroundColor '#1e7a4c'
+        run: ./node_modules/.bin/capacitor-assets generate --iconBackgroundColor '#1e7a4c' --splashBackgroundColor '#1e7a4c'
 
       # ── Android Platform ──────────────────────────────────────────────────────
       - name: Add Android platform
         working-directory: mobile-app
-        run: npx cap add android || echo "Android platform already exists — skipping."
+        run: |
+          if [ -d "android" ]; then
+            echo "Android platform already exists — skipping cap add."
+          else
+            ./node_modules/.bin/cap add android
+          fi
 
       - name: Sync Capacitor with Android
         working-directory: mobile-app
-        run: npx cap sync android
+        run: ./node_modules/.bin/cap sync android
 
-      # ── Signing & Version Injection ───────────────────────────────────────────
-      - name: Check if signing secrets exist
+      # ── Signing secrets check ─────────────────────────────────────────────────
+      - name: Check if signing secrets are configured
         run: |
           if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "SIGNING_AVAILABLE=false" >> $GITHUB_ENV
-            echo "⚠️  No KEYSTORE_BASE64 secret — will build debug APK as fallback."
+            echo "⚠️  KEYSTORE_BASE64 secret not set — building debug APK as fallback."
           else
             echo "SIGNING_AVAILABLE=true" >> $GITHUB_ENV
-            echo "✅ Signing secrets found."
+            echo "✅ Signing secrets detected."
           fi
 
-      - name: Decode keystore
+      - name: Decode keystore from secret
         if: env.SIGNING_AVAILABLE == 'true'
         working-directory: mobile-app
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > mghagha-release.jks
 
-      - name: Inject version + signing into build.gradle
+      # ── Inject version + signing into build.gradle ────────────────────────────
+      - name: Patch build.gradle (version + signing)
         working-directory: mobile-app
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -94,7 +109,7 @@ jobs:
           KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
         run: node inject-signing.js
 
-      # ── Build ─────────────────────────────────────────────────────────────────
+      # ── Gradle build ──────────────────────────────────────────────────────────
       - name: Make Gradle wrapper executable
         working-directory: mobile-app/android
         run: chmod +x gradlew
@@ -102,45 +117,47 @@ jobs:
       - name: Build signed RELEASE APK
         if: env.SIGNING_AVAILABLE == 'true'
         working-directory: mobile-app/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Build DEBUG APK (fallback — secrets not set yet)
+      - name: Build DEBUG APK (fallback — secrets not configured yet)
         if: env.SIGNING_AVAILABLE == 'false'
         working-directory: mobile-app/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # ── Zipalign + apksigner (extra hardening for release) ────────────────────
+      # ── Zipalign + apksigner ──────────────────────────────────────────────────
       - name: Zipalign and verify signed APK
         if: env.SIGNING_AVAILABLE == 'true'
         working-directory: mobile-app/android
         run: |
-          UNSIGNED=$(find app/build/outputs/apk/release -name "*unsigned*.apk" | head -1)
-          ZIPALIGN=$(find $ANDROID_HOME -name zipalign 2>/dev/null | head -1)
-          APKSIGNER=$(find $ANDROID_HOME -name apksigner 2>/dev/null | head -1)
+          ZIPALIGN=$(find "$ANDROID_HOME" -name zipalign 2>/dev/null | sort | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME" -name apksigner 2>/dev/null | sort | tail -1)
+          UNSIGNED=$(find app/build/outputs/apk/release -name "*unsigned*.apk" 2>/dev/null | head -1)
+          SIGNED_NAME="mghagha-v${{ env.VERSION_NAME }}-signed.apk"
+
+          echo "zipalign  : $ZIPALIGN"
+          echo "apksigner : $APKSIGNER"
+          echo "unsigned  : $UNSIGNED"
 
           if [ -n "$UNSIGNED" ] && [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
-            ALIGNED=app/build/outputs/apk/release/app-release-aligned.apk
-            SIGNED=app/build/outputs/apk/release/mghagha-v${{ env.VERSION_NAME }}-signed.apk
-
-            $ZIPALIGN -v 4 "$UNSIGNED" "$ALIGNED"
-            $APKSIGNER sign \
+            ALIGNED="app/build/outputs/apk/release/app-release-aligned.apk"
+            SIGNED="app/build/outputs/apk/release/$SIGNED_NAME"
+            "$ZIPALIGN" -v 4 "$UNSIGNED" "$ALIGNED"
+            "$APKSIGNER" sign \
               --ks ../mghagha-release.jks \
               --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
               --key-alias ${{ secrets.KEY_ALIAS }} \
               --key-pass pass:${{ secrets.KEY_PASSWORD }} \
               --out "$SIGNED" "$ALIGNED"
-
-            $APKSIGNER verify "$SIGNED" && echo "✅ APK signature verified."
+            "$APKSIGNER" verify "$SIGNED"
+            echo "✅ APK signed and verified: $SIGNED"
           else
-            # Gradle's own signingConfig already signed it — just rename for clarity
-            SRC=$(find app/build/outputs/apk/release -name "app-release.apk" | head -1)
-            if [ -n "$SRC" ]; then
-              cp "$SRC" app/build/outputs/apk/release/mghagha-v${{ env.VERSION_NAME }}-signed.apk
-            fi
-            echo "Gradle-signed APK ready."
+            # Gradle signing config handled it — just give it a friendly name
+            SRC=$(find app/build/outputs/apk/release -name "app-release.apk" 2>/dev/null | head -1)
+            [ -n "$SRC" ] && cp "$SRC" "app/build/outputs/apk/release/$SIGNED_NAME"
+            echo "Gradle-signed APK renamed to $SIGNED_NAME"
           fi
 
-      # ── Upload ────────────────────────────────────────────────────────────────
+      # ── Upload artifacts ──────────────────────────────────────────────────────
       - name: Upload signed release APK
         if: env.SIGNING_AVAILABLE == 'true'
         uses: actions/upload-artifact@v4
@@ -162,17 +179,17 @@ jobs:
         run: |
           echo "## متجر مغاغة — Build #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **versionCode** | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **versionName** | 1.0.${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Signed** | ${{ env.SIGNING_AVAILABLE }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Backend** | https://mghagha-projectzip--josenberlo.replit.app |" >> $GITHUB_STEP_SUMMARY
+          echo "| versionCode | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| versionName | 1.0.${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Signed | ${{ env.SIGNING_AVAILABLE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | https://mghagha-projectzip--josenberlo.replit.app |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "$SIGNING_AVAILABLE" = "true" ]; then
-            echo "✅ **Signed release APK** — safe to install, no Play Protect warnings." >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Signed release APK** — no Play Protect warnings." >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ **Debug APK** — add the 4 signing secrets then push again to get a signed release." >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Debug APK** — add signing secrets and push again for a release build." >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⬆️ Download from **Artifacts** above." >> $GITHUB_STEP_SUMMARY
+          echo "⬆️ Download from **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
